@@ -159,9 +159,16 @@ bool WISE_Interface::write_command_state(std::unordered_map<std::string, int>& c
 	return write_state_res == CURLE_OK;
 }
 
-WISE_IO_Point& WISE_Interface::lookup_IO_point(std::string& label)
+std::unique_ptr<WISE_IO_Point> WISE_Interface::lookup_IO_point(std::string& label)
 {
-
+	for (const WISE_IO_Point& point : Door_IO_Configuration)
+	{
+		if (point.label == label)
+		{
+			std::unique_ptr<WISE_IO_Point> 
+			return std::unique_ptr
+		}
+	}
 }
 
 //bool WISE_Interface::write_state(int state[])
