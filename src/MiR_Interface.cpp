@@ -89,7 +89,7 @@ void MiR_Interface::parse_registers(const json& GET_buffer, std::unordered_map<s
 		std::string register_label = register_data["label"];
 		//const char* register_label_c = register_label.c_str();
 		float register_value = register_data["value"];
-		result[register_label.c_str()] = register_value;
+		result[register_label.c_str()] = (int) register_value;
 	}
 }
 
@@ -174,7 +174,7 @@ void MiR_Interface::read_command_registers()
 		if ((&reg)->type == ROBOT_COMMAND)
 		{
 			std::string label = (&reg)->label;
-			this->register_state[label] = current_register_state[label];
+			this->register_state[label] = (float) current_register_state[label];
 		}
 		else if ((&reg)->type == DOOR_STATE)
 		{

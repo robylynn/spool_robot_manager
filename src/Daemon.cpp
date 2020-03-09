@@ -193,16 +193,20 @@ int main(int argc, char** argv)
 	UTD_Robot.synchronize_states(register_state);
 	*/
 
+	//std::thread edthread = East_Door_IO.start_thread(&(East_Door_IO.run_thread), *(East_Door_IO.synchronize_states), East_Door_IO);
 	std::thread edthread = East_Door_IO.start_thread();
-	std::thread wdthread = West_Door_IO.start_thread();
+	//std::thread wdthread = West_Door_IO.start_thread();
 
-	int east_input_state_copy[4] = { 0,0,0,0 };
-	int east_output_state_copy[4] = { 0,0,0,0 };
+	East_Door_IO.stage_commands(OPEN_DOOR_CMD_OBJECT);
+
+	//int east_input_state_copy[4] = { 0,0,0,0 };
+	//int east_output_state_copy[4] = { 0,0,0,0 };
 	//int(&state_copy)[];
-	East_Door_IO.get_state(east_input_state_copy, east_output_state_copy);
+	//East_Door_IO.get_state(east_input_state_copy, east_output_state_copy);
 
 	edthread.join();
-	wdthread.join();
+	
+	//wdthread.join();
 
 	//std::thread t_East_Door_IO(WISE_Interface::WISE_Interface("utd4_door_east_ethernet_iomodule"), NULL);
 	

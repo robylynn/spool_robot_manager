@@ -33,7 +33,6 @@
 
 using namespace std;
 using json = nlohmann::json;
-using string_map = std::unordered_map<std::string, int>;
 
 //size_t WriteCallback2(void *contents, size_t size, size_t nmemb, void *userp);
 
