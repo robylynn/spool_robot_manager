@@ -30,12 +30,12 @@ std::thread Device_Interface::start_thread()
 //{
 //	return;
 //}
-const void Device_Interface::enqueue_command(Device_Command& command)
+const void Device_Interface::enqueue_command(const Device_Command& command)
 {
 	this->command_queue.push(command);
 }
 
-void Device_Interface::handle_command(Device_Command& command)
+void Device_Interface::handle_command(const Device_Command& command)
 {
 	std::cout << "handling command: " << command.command_name;
 	return;
@@ -72,13 +72,10 @@ const void Device_Interface::synchronize()
 			Device_Command command = this->command_queue.front();
 			//caller->synchronize_states();
 			//this->read_state();
-			this->handle_command(command);
+			this->handle_command(command);			
 			this->command_queue.pop();
 		}
 
-		//this->read_module_states();
-		//this->write_state(this->output_commands);
-		//std::cout << "test\n";
 		std::this_thread::sleep_for(std::chrono::milliseconds(this->sleep_time_ms));
 	}
 	std::cout << "exiting thread " << this->object_name_ << "\n";

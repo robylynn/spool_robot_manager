@@ -3,6 +3,13 @@
 
 MiR_Register::MiR_Register(int id_, int value_, std::string label_, int type_) : id{ id_ }, value{ value_ }, label{ label_ }, type{ type_ } {};
 
+MiR_IO_Module::MiR_IO_Module() {};
+
+MiR_IO_Module::MiR_IO_Module(string name_, string type_, string guid_) : name{ name_ }, type{ type_ }, guid{ guid_ }
+{
+	this->URL = guid;
+};
+
 MiR_Interface::MiR_Interface(const MiR_Interface&) {};
 
 MiR_Interface::MiR_Interface(const char* address, const char* object_name) : network_address_{ address }, Device_Interface{ object_name }
@@ -13,25 +20,21 @@ MiR_Interface::MiR_Interface(const char* address, const char* object_name) : net
 	{
 		throw ERROR;
 	}
-	//this->URL = this->build_URL();
-	//std::string built_URL;
-	this->build_URL(this->register_bank_URL);
-	//this->register_bank_URL = this->build_URL());
-	//this->output_URL = this->build_URL(OUTPUT_DIRECTION);
+	
+	this->build_URL("registers", this->register_bank_URL);
+	this->build_URL("io_modules", this->io_modules_URL);
+
 	this->set_cURL_options();
 	this->setup_registers(register_configuration);
-
-	//this->setup_modules();
-	//std::string URL = (std::string) address;
-	//return;
+	this->read_internal_WISE_IO_config();
 }
 
-void MiR_Interface::build_URL(std::string& URL)
+void MiR_Interface::build_URL(const char* endpoint, std::string& target_URL)
 {
 	vector<string> address_vector;
 	address_vector.push_back(this->network_address_);
 	address_vector.push_back(this->api_address_);
-	address_vector.push_back("registers");
+	address_vector.push_back(endpoint);
 
 	std::string address;
 	for (vector<string>::const_iterator p = address_vector.begin(); p != address_vector.end(); ++p)
@@ -43,7 +46,7 @@ void MiR_Interface::build_URL(std::string& URL)
 		}
 	}
 	//return address;
-	URL = address;
+	target_URL = address;
 }
 
 void MiR_Interface::set_cURL_options()
@@ -82,7 +85,7 @@ void MiR_Interface::GET(const char* URL, CURLcode& res)
 	this->read_buffer.clear();
 }
 
-void MiR_Interface::parse_registers(const json& GET_buffer, std::unordered_map<std::string, int>& result)
+void MiR_Interface::parse_registers(const json& GET_buffer, string_map& result)
 {
 	for (const auto &register_data : GET_buffer)
 	{
@@ -120,6 +123,40 @@ void MiR_Interface::setup_registers(const std::vector<MiR_Register>& register_co
 	{
 		write_success &= this->write_register_state(&reg);
 	}
+}
+
+void MiR_Interface::read_internal_WISE_IO_config()
+{
+	CURLcode io_config_read_res;
+	//string io_config_URL;
+
+	this->GET(this->io_modules_URL.c_str(), io_config_read_res);
+	//this->parse_io_config(this->HTTP_result, this->internal_IO_configuration);
+
+	for (const auto& io_module : this->HTTP_result)
+	{
+		this->internal_IO_configuration[io_module["name"]] = MiR_IO_Module(io_module["name"], io_module["type"], io_module["guid"]);
+	}
+}
+
+//void MiR_Interface::parse_io_config(const json& GET_buffer, IO_map* IO_configuration)
+//{
+//	for (const auto& io_module : GET_buffer)
+//	{
+//		(*IO_configuration)[io_module["name"]] = MiR_IO_Module(io_module["name"], io_module["type"], io_module["guid"]);
+//	}
+//}
+
+void MiR_Interface::read_IO_module_state(string module_name, string_map& io_map)
+{
+	CURLcode io_state_read_res;
+	
+	this->GET((this->io_modules_URL + module_name).c_str(), io_state_read_res);
+}
+
+void MiR_Interface::parse_io_state(const json& GET_buffer, string_map& result)
+{
+
 }
 
 void MiR_Interface::read_register_state(const int register_address, std::unordered_map<std::string, int>* register_map)
@@ -165,7 +202,7 @@ bool MiR_Interface::write_register_state(const MiR_Register* register_state)
 
 void MiR_Interface::read_command_registers()
 {
-	std::unordered_map<std::string, int> current_register_state;
+	string_map current_register_state;
 	this->read_all_registers(&current_register_state);
 
 	//const std::lock_guard<std::mutex> lock(this->mtx);
@@ -183,7 +220,7 @@ void MiR_Interface::read_command_registers()
 	}
 }
 
-void MiR_Interface::write_state_registers(std::unordered_map<std::string, int> &door_state_map)
+void MiR_Interface::write_state_registers(string_map &door_state_map)
 {
 	//const std::lock_guard<std::mutex> lock(this->mtx);
 	for (const auto &reg : register_configuration)
@@ -200,7 +237,20 @@ void MiR_Interface::write_state_registers(std::unordered_map<std::string, int> &
 	}
 }
 
-void MiR_Interface::synchronize_states(std::unordered_map<std::string, int>& door_state_map)
+void MiR_Interface::read_state()
+{
+	const std::lock_guard<std::mutex> lock(this->mtx);
+	this->read_command_registers();
+	string_map IO_map;
+	this->read_IO_module_state(ONBOARD_WISE_IO_NAME, IO_map);
+}
+
+void MiR_Interface::handle_command(Device_Command& command)
+{
+	cout << "handling command: " << command.command_name;
+}
+
+void MiR_Interface::synchronize_states(string_map& door_state_map)
 {
 	//std::unordered_map<std::string, int> register_map;
 	//this->read_register_state(this->network_address_, &register_map);
@@ -210,6 +260,15 @@ void MiR_Interface::synchronize_states(std::unordered_map<std::string, int>& doo
 	this->write_state_registers(door_state_map);
 	//this->write_register_state(nullptr);
 
+}
+
+int MiR_Interface::lookup_state_value(string& point_id)
+{
+	int state_value;
+	const std::lock_guard<std::mutex> lock(this->mtx);
+	state_value = this->register_state[point_id];
+
+	return state_value;
 }
 
 void MiR_Interface::copy_robot_state(string_map* robot_state_map)

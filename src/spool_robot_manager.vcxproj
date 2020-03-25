@@ -154,7 +154,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\MiR_Interface.h" />
     <ClInclude Include="Device_Interface.h" />
     <ClInclude Include="MiR_Interface.h" />
     <ClInclude Include="WISE_Interface.h" />

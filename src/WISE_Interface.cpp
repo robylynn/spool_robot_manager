@@ -8,7 +8,11 @@ const char* JSON_DIRECTION_ADDRESSES[] = { "DIVal", "DOVal" };
 WISE_IO_Point::WISE_IO_Point(int IO_direction_, int channel_, std::string label_) : IO_direction{ IO_direction_ }, channel{ channel_ }, label{ label_ } {};
 WISE_IO_Point::WISE_IO_Point() : IO_direction{ 0 }, channel{ 0 }, label{ "" } {};
 
-WISE_Interface::WISE_Interface(const std::string network_address_) : network_address{ network_address_ }
+WISE_Interface::WISE_Interface(const WISE_Interface &WI) {}
+
+WISE_Interface::WISE_Interface(const WISE_Interface &WI, const std::lock_guard<std::mutex> &) : input_URL(WI.input_URL) {}
+
+WISE_Interface::WISE_Interface(const string network_address_) : network_address{ network_address_ }
 {
 	this->request_handle = curl_easy_init();
 	if (this->request_handle) {}
@@ -25,12 +29,6 @@ WISE_Interface::WISE_Interface(const std::string network_address_) : network_add
 }
 
 //WISE_Interface::WISE_Interface(const WISE_Interface &WI) : WISE_Interface(WI, std::lock_guard<std::mutex>(WI.mtx)) {}
-WISE_Interface::WISE_Interface(const WISE_Interface &WI) {}
-//{
-//	return;
-//}
-
-WISE_Interface::WISE_Interface(const WISE_Interface &WI, const std::lock_guard<std::mutex> &) : input_URL(WI.input_URL) {}
 
 void WISE_Interface::GET(const char* URL, CURLcode& res)
 {
@@ -69,6 +67,8 @@ void WISE_Interface::initialize_IO_state()
 	}
 }
 
+void WISE_Interface::read_state() { this->read_module_states(); }
+
 bool WISE_Interface::read_module_states()
 {
 	CURLcode input_read_res;
@@ -89,10 +89,6 @@ bool WISE_Interface::read_module_states()
 	return (input_read_res == CURLE_OK) && (output_read_res == CURLE_OK);
 }
 
-void WISE_Interface::read_state()
-{
-	this->read_module_states();
-
 	//while (this->run_thread)
 	//{
 	//	cout << "syncing";
@@ -107,7 +103,7 @@ void WISE_Interface::read_state()
 	//	//std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	//}
 	//std::cout << "exiting thread\n";
-}
+//}
 
 /*
 std::thread WISE_Interface::start_thread()
@@ -164,24 +160,47 @@ bool WISE_Interface::synchronous_PATCH(const char* PATCH_URL, const char* GET_UR
 	return true;
 }
 
-bool WISE_Interface::write_command_state_to_module(const ordered_string_map& command_state)
+//bool WISE_Interface::write_command_state_to_module(const ordered_string_map& command_state)
+////bool WISE_Interface::write_command_state_to_module(const Device_Command commands[])
+//{
+//	json patch_data;
+//	CURLcode write_state_res;
+//
+//	int channel_ndx = 0;
+//	for (const auto& p : command_state)
+//	{
+//		std::unique_ptr<WISE_IO_Point> io_point = this->lookup_IO_point(p.first);
+//		
+//		//this->output_commands[p.first] = p.second;//*io_point;
+//		
+//		/*
+//		patch_data["DOVal"][io_point->channel]["Ch"] = io_point->channel;
+//		patch_data["DOVal"][io_point->channel]["Val"] = io_point->value;
+//		*/
+//		patch_data["DOVal"][channel_ndx]["Ch"] = io_point->channel;
+//		patch_data["DOVal"][channel_ndx]["Val"] = p.second;
+//
+//		channel_ndx++;
+//	}
+//
+//	this->PATCH(this->output_URL.c_str(), write_state_res, patch_data);
+//	return write_state_res == CURLE_OK;
+//}
+
+//bool WISE_Interface::write_command_state_to_module(const ordered_string_map& command_state)
+bool WISE_Interface::write_command_state_to_module(const vector<Device_Command> commands)
 {
 	json patch_data;
 	CURLcode write_state_res;
 
 	int channel_ndx = 0;
-	for (const auto& p : command_state)
+	
+	for (const auto& p : commands)
 	{
-		std::unique_ptr<WISE_IO_Point> io_point = this->lookup_IO_point(p.first);
-		
-		//this->output_commands[p.first] = p.second;//*io_point;
-		
-		/*
-		patch_data["DOVal"][io_point->channel]["Ch"] = io_point->channel;
-		patch_data["DOVal"][io_point->channel]["Val"] = io_point->value;
-		*/
+		std::unique_ptr<WISE_IO_Point> io_point = this->lookup_IO_point(p.command_name);
+
 		patch_data["DOVal"][channel_ndx]["Ch"] = io_point->channel;
-		patch_data["DOVal"][channel_ndx]["Val"] = p.second;
+		patch_data["DOVal"][channel_ndx]["Val"] = p.value;
 
 		channel_ndx++;
 	}
@@ -190,14 +209,17 @@ bool WISE_Interface::write_command_state_to_module(const ordered_string_map& com
 	return write_state_res == CURLE_OK;
 }
 
+//bool WISE_Interface::write_command_state_to_module(const Device_Command& command)
+
 //bool write_command_to_module(string_map& command)
 
-void WISE_Interface::handle_command(Device_Command& command)
+void WISE_Interface::handle_command(const Device_Command& command)
 {
 	ordered_string_map command_map;
 	command_map[command.command_name] = command.value;
-
-	this->write_command_state_to_module(command_map);
+	
+	const vector<Device_Command> commands (1, command);
+	this->write_command_state_to_module(commands);
 }
 
 std::unique_ptr<WISE_IO_Point> WISE_Interface::lookup_IO_point(const std::string& label)

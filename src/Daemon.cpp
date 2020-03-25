@@ -184,45 +184,25 @@ int main(int argc, char** argv)
 	//East_Door_IO.read_internal_state();
 	//West_Door_IO.read_internal_state();
 	
-	/*
-	MiR_Interface UTD_Robot = MiR_Interface("utd_robot", "draw_mir");
 	
+	MiR_Interface UTD_Robot = MiR_Interface("utd_robot", "draw_mir");
+	//UTD_Robot.read_internal_WISE_IO_config();
+
 	//MiR_Interface UTD_Robot = MiR_Interface("10.1.27.60", "draw_mir");
 	
-	std::unordered_map<std::string, int> register_state;
-	UTD_Robot.synchronize_states(register_state);
-	*/
+	//std::unordered_map<std::string, int> register_state;
+	//UTD_Robot.synchronize_states(register_state);
+	
 
 	//std::thread edthread = East_Door_IO.start_thread(&(East_Door_IO.run_thread), *(East_Door_IO.synchronize_states), East_Door_IO);
 	std::thread edthread = East_Door_IO.start_thread();
 	//std::thread wdthread = West_Door_IO.start_thread();
+	std::thread robot_thread = UTD_Robot.start_thread();
 
 	East_Door_IO.stage_commands(OPEN_DOOR_CMD_OBJECT);
 
-	//int east_input_state_copy[4] = { 0,0,0,0 };
-	//int east_output_state_copy[4] = { 0,0,0,0 };
-	//int(&state_copy)[];
-	//East_Door_IO.get_state(east_input_state_copy, east_output_state_copy);
-
 	edthread.join();
-	
 	//wdthread.join();
-
-	//std::thread t_East_Door_IO(WISE_Interface::WISE_Interface("utd4_door_east_ethernet_iomodule"), NULL);
-	
-	//int state_vector[] = { 0, 0, 0, 1 };
-	//East_Door_IO.write_state(state_vector);
-
-	/*state_vector[3] = 0;
-	East_Door_IO.write_state(state_vector);
-
-	state_vector[3] = 1;
-	East_Door_IO.write_state(state_vector);
-
-	state_vector[3] = 0;
-	East_Door_IO.write_state(state_vector);*/
-
-	//East_Door_IO.read_state();
 
 	curl = curl_easy_init();
 	if (curl) {

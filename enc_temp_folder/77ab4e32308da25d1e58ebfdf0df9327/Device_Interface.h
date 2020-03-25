@@ -26,7 +26,7 @@ protected:
 	
 	static const int sleep_time_ms = 10;
 	const char* object_name_;// = "generic_device_interface";
-	long maximum_timeout = 5;
+	long maximum_timeout = 1;
 
 	std::atomic<bool> run_thread;
 	std::mutex mtx;

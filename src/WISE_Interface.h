@@ -124,8 +124,9 @@ private:
 	void setup_module_outputs(std::string& URL, CURLcode& res);
 	void set_cURL_options();
 	bool read_module_states();
-	bool write_command_state_to_module(const ordered_string_map& command_state);
-	void handle_command(Device_Command& command);
+	//bool write_command_state_to_module(const ordered_string_map& command_state);
+	bool write_command_state_to_module(const vector<Device_Command> commands);
+	void handle_command(const Device_Command& command);
 	//void synchronize();
 	void initialize_IO_state();
 	void parse_io_data(json& GET_buffer, std::unordered_map<std::string, WISE_IO_Point> &io_map);
